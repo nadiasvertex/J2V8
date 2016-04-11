@@ -1,4 +1,3 @@
-language: java
-
-notifications:
-  email: false
+language: cpp
+compiler: clang
+./build_4_x.sh 
