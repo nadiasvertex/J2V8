@@ -1,4 +1,4 @@
 os: osx
 language: cpp
 compiler: clang
-script: ./build_4_x.sh 
+install: ./build-node.sh
