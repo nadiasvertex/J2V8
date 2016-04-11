@@ -4,3 +4,4 @@ compiler: clang
 before_install:
  - chmod -x build-node.sh
 install: sh ./build-node.sh
+script: sh ./buildJ2V8_macos.sh 
