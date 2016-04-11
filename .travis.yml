@@ -1,4 +1,6 @@
 os: osx
-language: cpp
+language: cpe
 compiler: clang
+before_script:
+ - chmod build-node.sh
 install: ./build-node.sh
