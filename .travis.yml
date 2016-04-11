@@ -1,6 +1,6 @@
 os: osx
 language: cpe
 compiler: clang
-before_script:
- - chmod build-node.sh
-install: ./build-node.sh
+before_install:
+ - chmod -x build-node.sh
+install: sh ./build-node.sh
