@@ -9,14 +9,17 @@
 *    EclipseSource - initial API and implementation
 ******************************************************************************/
 #include <jni.h>
-#include <include/libplatform/libplatform.h>
+#include <libplatform/libplatform.h>
 #include <iostream>
 
-#include <include/v8.h>
+#include <v8.h>
 #include <string.h>
+#include <v8-debug.h>
+#include <node.h>
 #include <map>
 #include <cstdlib>
 #include <vector>
+#include <deps/uv/include/uv.h>
 #include "com_eclipsesource_v8_V8Impl.h"
 #pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "WINMM.lib")
@@ -39,6 +42,8 @@ public:
   std::vector<MethodDescriptor*> methodDescriptors;
   jobject v8;
   jthrowable pendingException;
+  node::Environment* nodeEnvironment;
+  uv_loop_t* uvLoop;
 };
 
 v8::Platform* v8Platform;
@@ -263,7 +268,73 @@ JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8__1setFlags
     v8::V8::Initialize();
 }
 
+JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8__1setV8
+  (JNIEnv *env, jobject v8, jlong v8RuntimePtr, jobject) {
+  reinterpret_cast<V8Runtime*>(v8RuntimePtr)->v8 = env->NewGlobalRef(v8); 
+}
+
 ShellArrayBufferAllocator array_buffer_allocator;
+
+JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8__1startNodeJS
+  (JNIEnv * env, jclass, jlong v8RuntimePtr, jstring fileName) {
+  Isolate* isolate = SETUP(env, v8RuntimePtr, );
+  setvbuf(stderr, NULL, _IOLBF, 1024);
+  const char* utfFileName = env->GetStringUTFChars(fileName, NULL);
+  const char *argv[] = {"j2v8", utfFileName, NULL};
+  int argc = sizeof(argv) / sizeof(char*) - 1;
+  V8Runtime* rt = reinterpret_cast<V8Runtime*>(v8RuntimePtr);
+  rt->uvLoop = new uv_loop_t();
+  uv_loop_init(rt->uvLoop);
+  node::Environment* environment = node::CreateEnvironment(isolate, rt->uvLoop, context, argc, argv, 0, 0);
+  node::LoadEnvironment(environment);
+  rt->nodeEnvironment = environment;
+}
+  
+JNIEXPORT jboolean JNICALL Java_com_eclipsesource_v8_V8__1pumpMessageLoop
+  (JNIEnv * env, jclass, jlong v8RuntimePtr) {
+  Isolate* isolate = SETUP(env, v8RuntimePtr, false);
+  V8Runtime* rt = reinterpret_cast<V8Runtime*>(v8RuntimePtr);
+  node::Environment* environment = rt->nodeEnvironment;
+  SealHandleScope seal(isolate);
+  bool more;
+  v8::platform::PumpMessageLoop(v8Platform, isolate);
+  more = uv_run(rt->uvLoop, UV_RUN_ONCE);
+  if (more == false) {
+    v8::platform::PumpMessageLoop(v8Platform, isolate);
+    node::EmitBeforeExit(environment);
+    // Emit `beforeExit` if the loop became alive either after emitting
+    // event, or after running some callbacks.
+    more = uv_loop_alive(rt->uvLoop);
+    if (uv_run(rt->uvLoop, UV_RUN_NOWAIT) != 0) {
+      more = true;
+    }
+  }
+  return more;
+}
+  
+JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8__1runMessageLoopToCompletion
+(JNIEnv * env, jclass, jlong v8RuntimePtr) {
+  Isolate* isolate = SETUP(env, v8RuntimePtr, );
+  V8Runtime* rt = reinterpret_cast<V8Runtime*>(v8RuntimePtr);
+  node::Environment* environment = rt->nodeEnvironment;
+  SealHandleScope seal(isolate);
+  bool more = true;
+    do {
+      v8::platform::PumpMessageLoop(v8Platform, isolate);
+      more = uv_run(rt->uvLoop, UV_RUN_ONCE);
+
+      if (more == false) {
+        v8::platform::PumpMessageLoop(v8Platform, isolate);
+        node::EmitBeforeExit(environment);
+        // Emit `beforeExit` if the loop became alive either after emitting
+        // event, or after running some callbacks.
+        more = uv_loop_alive(rt->uvLoop);
+        if (uv_run(rt->uvLoop, UV_RUN_NOWAIT) != 0)
+          more = true;
+        }
+
+    } while (more == true);
+}
 
 JNIEXPORT jlong JNICALL Java_com_eclipsesource_v8_V8__1createIsolate
  (JNIEnv *env, jobject v8, jstring globalAlias) {
@@ -307,7 +378,8 @@ JNIEXPORT jlong JNICALL Java_com_eclipsesource_v8_V8__1getGlobalObject
   (JNIEnv *env, jobject, jlong v8RuntimePtr) {
   Isolate* isolate = SETUP(env, v8RuntimePtr, 0);
   Local<Object> obj = Object::New(isolate);
-  return reinterpret_cast<jlong>(reinterpret_cast<V8Runtime*>(v8RuntimePtr)->globalObject);
+  long handle = reinterpret_cast<jlong>(reinterpret_cast<V8Runtime*>(v8RuntimePtr)->globalObject);
+  return handle;
 }
 
 JNIEXPORT void JNICALL Java_com_eclipsesource_v8_V8__1createTwin
@@ -1114,6 +1186,7 @@ jobject createParameterArray(JNIEnv* env, jlong v8RuntimePtr, jobject v8, int si
 }
 
 void voidCallback(const FunctionCallbackInfo<Value>& args) {
+
   int size = args.Length();
   Local<External> data = Local<External>::Cast(args.Data());
   void *methodDescriptorPtr = data->Value();
@@ -1180,11 +1253,13 @@ double getDouble(JNIEnv* env, jobject &object) {
 }
 
 void objectCallback(const FunctionCallbackInfo<Value>& args) {
+
   int size = args.Length();
   Local<External> data = Local<External>::Cast(args.Data());
   void *methodDescriptorPtr = data->Value();
   MethodDescriptor* md = static_cast<MethodDescriptor*>(methodDescriptorPtr);
   jobject v8 = reinterpret_cast<V8Runtime*>(md->v8RuntimePtr)->v8;
+  
   Isolate* isolate = reinterpret_cast<V8Runtime*>(md->v8RuntimePtr)->isolate;
   JNIEnv * env;
   getJNIEnv(env);
