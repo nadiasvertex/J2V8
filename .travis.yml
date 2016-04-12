@@ -1,5 +1,7 @@
 os: osx
 language: cpp
+branches:
+ only: master
 compiler: clang
 before_install:
 - chmod -x build-node.sh
