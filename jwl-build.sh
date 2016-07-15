@@ -32,4 +32,4 @@ cp -vrf libs/* src/main/jniLibs/
 
 # Copy the output
 mkdir -p ${JWL_OUTPUT_DIR}/j2v8
-cp -vf build/outputs/aar/j2v8-release.aar ${JWL_OUTPUT_DIR}/j2v8/j2v8.aar
+cp -vf build/outputs/aar/workspace-release.aar ${JWL_OUTPUT_DIR}/j2v8/j2v8.aar
