@@ -41,12 +41,11 @@ include $(PREBUILT_STATIC_LIBRARY)
 #include $(PREBUILT_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
-LOCAL_MODULE    := j2v8_android_$(TARGET_ARCH_ABI)
+LOCAL_MODULE    := j2v8
 LOCAL_SRC_FILES := com_eclipsesource_v8_V8Impl.cpp
-#LOCAL_C_INCLUDES := /data/jenkins/v8_3_26/include/
 LOCAL_C_INCLUDES := v8/include v8
 LOCAL_CFLAGS += -std=c++11 -Wall -Wno-unused-function -Wno-unused-variable -O3 -funroll-loops -ftree-vectorize -ffast-math -fpermissive -fpic
 #LOCAL_STATIC_LIBRARIES := v8_base v8_nosnapshot libicui18n libicuuc libicudata
 LOCAL_STATIC_LIBRARIES := v8_base v8_libbase v8_libplatform v8_nosnapshot
-LOCAL_LDLIBS += -L$(SYSROOT)/usr/lib -llog -latomic
+LOCAL_LDLIBS += -L$(SYSROOT)/usr/lib -llog -latomic 
 include $(BUILD_SHARED_LIBRARY)
