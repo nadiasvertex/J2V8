@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-NDK="/opt/android/ndk-r12b"
+NDK="/opt/android/ndk-12b"
 JWL_OUTPUT_DIR="/mnt/meps/JWLibrary/JWLibrary/Android/native"
 #JWL_OUTPUT_DIR="/home/csnelson/dept/JWLibrary/JWLibrary/Android/native"
 
