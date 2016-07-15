@@ -32,16 +32,16 @@ dependencies {
 }
 
 android {
-    compileSdkVersion 10
-    buildToolsVersion '23.0.2'
+    compileSdkVersion 24 
+    buildToolsVersion '24'
 
     defaultConfig {
-	minSdkVersion 10
-	targetSdkVersion 10
+	    minSdkVersion 10
+	    targetSdkVersion 10
     }
 
     lintOptions {
-	abortOnError false
+	    abortOnError false
     }
 }
 
@@ -70,27 +70,26 @@ uploadArchives {
 	    url 'https://github.com/eclipsesource/j2v8'
 
 	    scm {
-		url 'scm:git:git@github.com:eclipsesource/J2V8.git'
-		connection 'scm:git:git@github.com:eclipsesource/J2V8.git'
-		developerConnection 'scm:git:git@github.com:eclipsesource/J2V8.git'
+        url 'scm:git:git@github.com:eclipsesource/J2V8.git'
+        connection 'scm:git:git@github.com:eclipsesource/J2V8.git'
+        developerConnection 'scm:git:git@github.com:eclipsesource/J2V8.git'
 	    }
 
 	    licenses {
-		license {
-		    name 'Eclipse Public License - v 1.0'
-		    url 'https://www.eclipse.org/legal/epl-v10.html'
-		    distribution 'repo'
-		}
+        license {
+            name 'Eclipse Public License - v 1.0'
+            url 'https://www.eclipse.org/legal/epl-v10.html'
+            distribution 'repo'
+        }
 	    }
 
 	    developers {
-		developer {
-		    id 'irbull'
-		    name 'R. Ian Bull'
-		    email 'irbull@eclipsesource.com'
-		}
-	    }
-
+            developer {
+                id 'irbull'
+                name 'R. Ian Bull'
+                email 'irbull@eclipsesource.com'
+            }
+          }
         }
       }
     }
